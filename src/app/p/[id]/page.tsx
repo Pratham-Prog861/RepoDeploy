@@ -54,7 +54,7 @@ export default function DeploymentSuccessPage({
             <Link href="/">Deploy Another</Link>
           </Button>
           <Button asChild>
-            <a href="#" target="_blank" rel="noopener noreferrer">
+            <a href={liveUrl} target="_blank" rel="noopener noreferrer">
               Visit Site <ExternalLink className="ml-2 h-4 w-4" />
             </a>
           </Button>
