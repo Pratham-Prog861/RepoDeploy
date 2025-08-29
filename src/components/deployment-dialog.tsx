@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useState, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -40,7 +40,7 @@ function SubmitButton() {
 }
 
 export function DeploymentDialog() {
-  const [state, formAction] = useFormState(deployRepo, initialState);
+  const [state, formAction] = useActionState(deployRepo, initialState);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
