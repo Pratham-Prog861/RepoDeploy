@@ -3,6 +3,7 @@
 
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
+// import { deployRepository } from './firebase';
 
 // A simple regex to validate GitHub repository URLs.
 const GITHUB_URL_REGEX =
@@ -30,22 +31,26 @@ export async function deployRepo(
     };
   }
 
-  // Simulate deployment process
   try {
-    // Simulate cloning
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Simulate build
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Simulate deployment
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  } catch (error) {
-    return { message: 'An unexpected error occurred during deployment.' };
+    // TEMPORARY: Simulate deployment until Firebase Functions are ready
+    // TODO: Uncomment when Firebase Functions are deployed
+    // const result = await deployRepository({
+    //   repoUrl: validatedFields.data.repoUrl,
+    // });
+    // const deploymentId = (result.data as any).deploymentId;
+    
+    // Simulate deployment process
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Generate a temporary deployment ID
+    const deploymentId = Math.random().toString(36).substring(2, 10);
+    
+    redirect(`/p/${deploymentId}`);
+    
+  } catch (error: any) {
+    console.error('Deployment error:', error);
+    return { 
+      message: 'Firebase Functions not deployed yet. Please upgrade to Blaze plan and deploy functions first.' 
+    };
   }
-
-  // Generate a random ID for the project
-  const projectId = Math.random().toString(36).substring(2, 10);
-
-  redirect(`/p/${projectId}`);
 }
