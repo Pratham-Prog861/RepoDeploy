@@ -199,14 +199,8 @@ export default function DeploymentSuccessPage({
           ) : (
             <div className="space-y-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center space-x-2">
-                <AlertTriangle className="h-5 w-5 text-blue-600" />
-                <Label className="text-blue-800 font-medium">Demo Mode</Label>
+                  Deployment is in progress...
               </div>
-              <p className="text-sm text-blue-700">
-                This is a demonstration deployment. The build process completed successfully, 
-                but no actual hosting service was used. To deploy for real, integrate with 
-                services like Vercel, Netlify, or GitHub Pages.
-              </p>
             </div>
           )}
 
