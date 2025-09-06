@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-// import { deployRepository } from './firebase';
+import { startDeployment } from '@/lib/deployment';
 
 // A simple regex to validate GitHub repository URLs.
 const GITHUB_URL_REGEX =
@@ -32,25 +32,25 @@ export async function deployRepo(
   }
 
   try {
-    // TEMPORARY: Simulate deployment until Firebase Functions are ready
-    // TODO: Uncomment when Firebase Functions are deployed
-    // const result = await deployRepository({
-    //   repoUrl: validatedFields.data.repoUrl,
-    // });
-    // const deploymentId = (result.data as any).deploymentId;
+    // Call deployment service directly (no HTTP request needed)
+    const result = await startDeployment(validatedFields.data.repoUrl);
+    const deploymentId = result.deploymentId;
     
-    // Simulate deployment process
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Generate a temporary deployment ID
-    const deploymentId = Math.random().toString(36).substring(2, 10);
+    // Add a small delay to ensure the database record is saved
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     redirect(`/p/${deploymentId}`);
     
   } catch (error: any) {
+    // Handle redirect errors (these are expected)
+    if (error?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error; // Re-throw redirect errors - this is normal Next.js behavior
+    }
+    
     console.error('Deployment error:', error);
+    
     return { 
-      message: 'Firebase Functions not deployed yet. Please upgrade to Blaze plan and deploy functions first.' 
+      message: error.message || 'Deployment failed. Please try again.' 
     };
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ExternalLink, CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CopyButton } from '@/components/copy-button';
+import { WebsitePreview } from '@/components/website-preview';
 // import { getDeploymentStatus } from '@/lib/firebase';
 
 interface Deployment {
@@ -32,54 +33,66 @@ interface Deployment {
 export default function DeploymentSuccessPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = use(params);
   const [deployment, setDeployment] = useState<Deployment | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TEMPORARY: Create mock deployment data until Firebase is ready
-    const mockDeployment: Deployment = {
-      id,
-      repoUrl: 'https://github.com/example/repo',
-      status: 'deployed',
-      liveUrl: `https://${id}.repodeploy.web.app`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      buildLogs: [
-        'Deployment initiated...',
-        'Starting build process...',
-        'Cloning repository...',
-        'Installing dependencies...',
-        'Building project...',
-        'Creating deployment package...',
-        'Deploying to hosting...',
-        'Deployment successful!'
-      ]
+    const fetchDeployment = async () => {
+      try {
+        console.log(`[Client] Fetching deployment with ID: ${id}`);
+        const response = await fetch(`/api/status/${id}`, {
+          cache: 'no-store', // Prevent caching issues
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        console.log(`[Client] API response status: ${response.status}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error(`[Client] API error:`, errorData);
+          throw new Error(errorData.error || 'Deployment not found');
+        }
+        
+        const deploymentData = await response.json();
+        console.log(`[Client] Deployment data received:`, deploymentData);
+        
+        // Transform Supabase data to match component interface
+        const deployment: Deployment = {
+          id: deploymentData.id,
+          repoUrl: deploymentData.repo_url,
+          status: deploymentData.status,
+          liveUrl: deploymentData.live_url || null,
+          createdAt: deploymentData.created_at,
+          updatedAt: deploymentData.updated_at,
+          buildLogs: deploymentData.build_logs || [],
+          error: deploymentData.error_message
+        };
+        
+        setDeployment(deployment);
+      } catch (error) {
+        console.error('[Client] Failed to fetch deployment:', error);
+        setDeployment(null);
+      } finally {
+        setLoading(false);
+      }
     };
-
-    // Simulate loading
-    setTimeout(() => {
-      setDeployment(mockDeployment);
-      setLoading(false);
-    }, 1500);
-
-    // TODO: Uncomment when Firebase Functions are deployed
-    // const fetchDeployment = async () => {
-    //   try {
-    //     const result = await getDeploymentStatus({ deploymentId: id });
-    //     setDeployment(result.data as Deployment);
-    //   } catch (error) {
-    //     console.error('Failed to fetch deployment:', error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchDeployment();
-    // const interval = setInterval(fetchDeployment, 5000);
-    // return () => clearInterval(interval);
-  }, [id]);
+    
+    fetchDeployment();
+    
+    // Poll for updates every 3 seconds if deployment is in progress
+    const interval = setInterval(() => {
+      if (deployment?.status === 'pending' || deployment?.status === 'building') {
+        fetchDeployment();
+      }
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [id, deployment?.status]);
 
   if (loading) {
     return (
@@ -101,9 +114,12 @@ export default function DeploymentSuccessPage({
           <CardContent className="text-center py-20">
             <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold">Deployment not found</h2>
-            <p className="text-muted-foreground mt-2">
-              The deployment you're looking for doesn't exist.
+            <p className="text-muted-foreground mt-2 mb-4">
+              The deployment with ID <code className="bg-gray-100 px-2 py-1 rounded">{id}</code> doesn't exist or may have been removed.
             </p>
+            <Button asChild variant="outline">
+              <Link href="/">Go back to deploy a new project</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -155,42 +171,44 @@ export default function DeploymentSuccessPage({
             </div>
           </div>
           
-          {/* Firebase Functions Notice */}
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm text-yellow-800">
-                <strong>Note:</strong> This is a demo deployment. To enable real deployments, upgrade to Firebase Blaze plan and deploy functions.
-              </span>
-            </div>
-          </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {deployment.status === 'deployed' && (
-            <div className="aspect-video w-full overflow-hidden rounded-lg border">
-              <Image
-                src="https://picsum.photos/1280/720"
-                alt="Project screenshot placeholder"
-                width={1280}
-                height={720}
-                className="object-cover w-full h-full"
-                data-ai-hint="website screenshot"
+          {deployment.status === 'deployed' && deployment.liveUrl && (
+            <div className="aspect-video w-full overflow-hidden rounded-lg border bg-gray-50">
+              <WebsitePreview 
+                url={deployment.liveUrl}
+                alt={`Screenshot of ${deployment.repoUrl}`}
+                fallbackTitle={deployment.id}
               />
             </div>
           )}
           
-          <div className="space-y-2">
-            <Label htmlFor="live-url">Your unique live URL</Label>
-            <div className="flex space-x-2">
-              <Input id="live-url" value={deployment.liveUrl} readOnly />
-              <CopyButton textToCopy={deployment.liveUrl} />
+          {deployment.liveUrl ? (
+            <div className="space-y-2">
+              <Label htmlFor="live-url">Your unique live URL</Label>
+              <div className="flex space-x-2">
+                <Input id="live-url" value={deployment.liveUrl} readOnly />
+                <CopyButton textToCopy={deployment.liveUrl} />
+              </div>
+              {deployment.status === 'deployed' && (
+                <p className="text-sm text-green-600">
+                  ✅ This link is now live and accessible!
+                </p>
+              )}
             </div>
-            {deployment.status === 'deployed' && (
-              <p className="text-sm text-green-600">
-                ✅ This link is now live and accessible!
+          ) : (
+            <div className="space-y-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-blue-600" />
+                <Label className="text-blue-800 font-medium">Demo Mode</Label>
+              </div>
+              <p className="text-sm text-blue-700">
+                This is a demonstration deployment. The build process completed successfully, 
+                but no actual hosting service was used. To deploy for real, integrate with 
+                services like Vercel, Netlify, or GitHub Pages.
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {deployment.buildLogs && deployment.buildLogs.length > 0 && (
             <div className="space-y-2">
@@ -218,7 +236,7 @@ export default function DeploymentSuccessPage({
           <Button variant="outline" asChild>
             <Link href="/">Deploy Another</Link>
           </Button>
-          {deployment.status === 'deployed' && (
+          {deployment.status === 'deployed' && deployment.liveUrl && (
             <Button asChild>
               <a href={deployment.liveUrl} target="_blank" rel="noopener noreferrer">
                 Visit Site <ExternalLink className="ml-2 h-4 w-4" />
