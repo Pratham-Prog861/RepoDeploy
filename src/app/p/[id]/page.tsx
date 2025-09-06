@@ -16,8 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CopyButton } from '@/components/copy-button';
 import { WebsitePreview } from '@/components/website-preview';
-// import { getDeploymentStatus } from '@/lib/firebase';
-
 interface Deployment {
   id: string;
   repoUrl: string;
