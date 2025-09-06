@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { ExternalLink, CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { ExternalLink, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import {
   Card,
   CardContent,
