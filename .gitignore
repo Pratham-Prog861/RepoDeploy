@@ -45,3 +45,5 @@ WARP.md
 # firebase
 firebase-debug.log
 firestore-debug.log
+# Local Netlify folder
+.netlify
